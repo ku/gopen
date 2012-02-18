@@ -21,7 +21,6 @@ if test "x$1" = "x"  ; then
         if test "x$BRANCH" = "x(no branch)"; then
             URL="$ORIGIN$REPOS"
         else
-            echo $BRANCH
             URL="$ORIGIN$REPOS/tree/$BRANCH"
         fi
     fi
