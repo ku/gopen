@@ -19,6 +19,7 @@ else
     GIST=NO
 fi
 
+COMMIT=$1
 if test "x$COMMIT" = "x"  ; then
     if test $GIST = "YES" ; then
         URL="$ORIGIN$REPOS"
@@ -26,7 +27,7 @@ if test "x$COMMIT" = "x"  ; then
         if test "x$BRANCH" = "x(no branch)"; then
             URL="$ORIGIN$REPOS"
         else
-            URL="$ORIGIN$REPOS/tree/$BRANCH"
+            URL="$ORIGIN$REPOS/tree/$BRANCH/$COMMIT"
         fi
     fi
 else
