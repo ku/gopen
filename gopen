@@ -1,7 +1,16 @@
 #!/bin/sh 
 
 GIT='git'
-FETCH_URL=`$GIT remote show origin -n  | sed -n '/Fetch URL/p' | awk '{print $3}' | sed -E 's/[:@]/ /g' `
+
+if test `uname` = "Darwin" ; then
+    SED_OPT='-E'
+    OPEN='open'
+else
+    SED_OPT='-r'
+    OPEN=''
+fi
+
+FETCH_URL=`$GIT remote show origin -n  | sed -n '/Fetch URL/p' | awk '{print $3}' | sed $SED_OPT 's/[:@]/ /g' `
 HOST=`echo $FETCH_URL | awk '{print $2}' `
 REPOS=`echo $FETCH_URL | awk '{print $3}' | sed 's/.git$//'`
 ORIGIN="http://$HOST/"
@@ -38,4 +47,6 @@ else
     fi
 fi
 echo $URL
-open "$URL"
+if test "x" != "x$OPEN" ; then
+    $OPEN "$URL"
+fi
