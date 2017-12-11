@@ -28,7 +28,7 @@ end
 
 class Github < Repo
   def initialize(url)
-    (_, @organization_name, @repository_name) = url.match(/github.com:(\w+)\/(\w+)/).to_a
+    (_, @organization_name, @repository_name) = url.match(/github.com:([-\w]+)\/([-\w]+)/).to_a
   end
 
   def root
@@ -60,7 +60,7 @@ class Gist < Github
 end
 class Bitbucket < Repo
   def initialize(url)
-    (@repository_name, @organization_name) = url.split('/').reverse
+    (@repository_name, @organization_name) = url.gsub(/\.git$/, '').split('/').reverse
   end
   def root
     "https://bitbucket.org"
