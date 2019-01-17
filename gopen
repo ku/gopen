@@ -1,15 +1,18 @@
 #!/usr/bin/env ruby
 
+require 'pp'
+
 ENV['GIT'] = "git"
 
 class Repo
-  def self.parse(url)
+  def self.parse(url, branch)
+
     if url.match(/gist.github.com/)
-      Gist.new(url)
-    elsif url.match(/^git@github.com/)
-      Github.new(url)
+      Gist.new(url, branch)
+    elsif m = url.match(/^(git\+ssh:\/\/)?(git@github.com\b.+)/)
+      Github.new(m[2], branch)
     elsif url.match(/bitbucket.org/)
-      Bitbucket.new(url)
+      Bitbucket.new(url, branch)
     else
       nil
     end
@@ -27,8 +30,9 @@ class Repo
 end
 
 class Github < Repo
-  def initialize(url)
-    (_, @organization_name, @repository_name) = url.match(/github.com:([-\w]+)\/([-\w]+)/).to_a
+  def initialize(url, branch)
+    @branch = branch
+    (_, @organization_name, @repository_name) = url.match(/github.com[:\/]([-\w]+)\/([-\w]+)/).to_a
   end
 
   def root
@@ -37,14 +41,15 @@ class Github < Repo
 
   def build_url(commit)
     if commit
-      [super, 'commit', commit].join('/')
+      [super, 'commit', commit ].join('/')
     else
-      super
+      [super, 'tree', @branch ].join('/')
     end
   end
 end
 class Gist < Github
-  def initialize(url)
+  def initialize(url, branch)
+    @branch = branch
     (@repository_name, @organization_name) = url.split('/').reverse
   end
   def root
@@ -81,10 +86,20 @@ class Main
     line.split(': ').pop()
   end
 
+  def fetch_current_branch
+    lines = `GIT branch`
+    line = lines.split("\n").find {|line| line.match /^\* / }
+    branch = line.split(' ', 2).pop()
+    pp branch
+    branch.match(/^\w/) ? branch : 'master'
+  end
+
   def run(args)
     commit = args.shift
     url = self.fetch_url
-    repo = Repo.parse(url)
+    branch = fetch_current_branch
+
+    repo = Repo.parse(url, branch)
     repo.open(commit)
   end
 
