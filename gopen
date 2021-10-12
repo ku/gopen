@@ -7,14 +7,16 @@ ENV['GIT'] = "git"
 class Repo
   def self.parse(url, branch)
 
+    puts url
+
     if url.match(/gist.github.com/)
       Gist.new(url, branch)
-    elsif m = url.match(/^(git\+ssh:\/\/)?(git@github.com\b.+)/)
+    elsif m = url.match(/^(git@|ssh:\/\/git@|git:git@|https:\/\/)(github.com\b.+)/)
       Github.new(m[2], branch)
     elsif url.match(/bitbucket.org/)
       Bitbucket.new(url, branch)
     else
-      nil
+      raise "repo #{ url } does not match any patterns"
     end
   end
 
@@ -32,7 +34,7 @@ end
 class Github < Repo
   def initialize(url, branch)
     @branch = branch
-    (_, @organization_name, @repository_name) = url.match(/github.com[:\/]([-\w]+)\/([-\w]+)/).to_a
+    (_, @organization_name, @repository_name) = url.gsub(/\.git$/, '').match(/github.com[:\/]([-\w]+)\/([-\w\.]+)/).to_a
   end
 
   def root
@@ -64,7 +66,7 @@ class Gist < Github
   end
 end
 class Bitbucket < Repo
-  def initialize(url)
+  def initialize(url, branch)
     (@repository_name, @organization_name) = url.gsub(/\.git$/, '').split('/').reverse
   end
   def root
@@ -81,16 +83,15 @@ end
 
 class Main
   def fetch_url
-    lines = `GIT remote show origin -n`
+    lines = `git remote show origin -n`
     line = lines.split("\n").find {|line| line.match /Fetch URL/ }
     line.split(': ').pop()
   end
 
   def fetch_current_branch
-    lines = `GIT branch`
+    lines = `git branch`
     line = lines.split("\n").find {|line| line.match /^\* / }
     branch = line.split(' ', 2).pop()
-    pp branch
     branch.match(/^\w/) ? branch : 'master'
   end
 
