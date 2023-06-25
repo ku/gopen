@@ -5,9 +5,10 @@ require 'pp'
 ENV['GIT'] = "git"
 
 class Repo
-  def self.parse(url, branch)
-
-    puts url
+  def self.parse(url)
+    if File.exists? '.git'
+      branch = fetch_current_branch
+    end
 
     if url.match(/gist.github.com/)
       Gist.new(url, branch)
@@ -15,9 +16,18 @@ class Repo
       Github.new(m[2], branch)
     elsif url.match(/bitbucket.org/)
       Bitbucket.new(url, branch)
+    elsif m = url.match(/^(github.com\b.+)/)
+      Github.new(m[1], nil)
     else
       raise "repo #{ url } does not match any patterns"
     end
+  end
+
+  def self.fetch_current_branch
+    lines = `git branch`
+    line = lines.split("\n").find {|line| line.match /^\* / }
+    branch = line.split(' ', 2).pop()
+    branch.match(/^\w/) ? branch : 'master'
   end
 
   def build_url(commit)
@@ -44,6 +54,8 @@ class Github < Repo
   def build_url(commit)
     if commit
       [super, 'commit', commit ].join('/')
+    elsif @branch.nil?
+      [super].join('/')
     else
       [super, 'tree', @branch ].join('/')
     end
@@ -83,24 +95,27 @@ end
 
 class Main
   def fetch_url
-    lines = `git remote show origin -n`
-    line = lines.split("\n").find {|line| line.match /Fetch URL/ }
-    line.split(': ').pop()
+    if File.exists? '.git'
+      lines = `git remote show origin -n`
+      line = lines.split("\n").find {|line| line.match /Fetch URL/ }
+      line.split(': ').pop()
+    else
+      path = Dir.pwd # get current directory path
+      github_dir = "#{File::SEPARATOR}github.com#{File::SEPARATOR}" # set the directory name
+
+      if path.include?(github_dir) # check if the directory name is included
+        m = path.match(%r{github.com/[-\w]+/[-\w]+})
+        m[0]
+      end
+    end
   end
 
-  def fetch_current_branch
-    lines = `git branch`
-    line = lines.split("\n").find {|line| line.match /^\* / }
-    branch = line.split(' ', 2).pop()
-    branch.match(/^\w/) ? branch : 'master'
-  end
 
   def run(args)
     commit = args.shift
     url = self.fetch_url
-    branch = fetch_current_branch
 
-    repo = Repo.parse(url, branch)
+    repo = Repo.parse(url)
     repo.open(commit)
   end
 
