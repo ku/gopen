@@ -6,9 +6,7 @@ ENV['GIT'] = "git"
 
 class Repo
   def self.parse(url)
-    if File.exists? '.git'
-      branch = fetch_current_branch
-    end
+    branch = fetch_current_branch
 
     if url.match(/gist.github.com/)
       Gist.new(url, branch)
@@ -17,7 +15,7 @@ class Repo
     elsif url.match(/bitbucket.org/)
       Bitbucket.new(url, branch)
     elsif m = url.match(/^(github.com\b.+)/)
-      Github.new(m[1], nil)
+      Github.new(m[1], branch)
     else
       raise "repo #{ url } does not match any patterns"
     end
@@ -27,7 +25,7 @@ class Repo
     lines = `git branch`
     line = lines.split("\n").find {|line| line.match /^\* / }
     branch = line.split(' ', 2).pop()
-    branch.match(/^\w/) ? branch : 'master'
+    branch.match(/^\w/) ? branch : 'main'
   end
 
   def build_url(commit)
@@ -102,6 +100,7 @@ class Main
     else
       path = Dir.pwd # get current directory path
       github_dir = "#{File::SEPARATOR}github.com#{File::SEPARATOR}" # set the directory name
+
 
       if path.include?(github_dir) # check if the directory name is included
         m = path.match(%r{github.com/[-\w]+/[-\w]+})
